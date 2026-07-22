@@ -169,6 +169,26 @@ export default {
       });
     }
 
+    // ── GET /data/wris/index.json ─────────────────────────────────────────────
+    if (url.pathname === "/data/wris/index.json" && request.method === "GET") {
+      const obj = await env.GRBMS_BUCKET.get("wris/index.json");
+      if (!obj) return json({ error: "WRIS index not found" }, 404);
+      return new Response(obj.body, {
+        headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=3600", ...cors(origin) },
+      });
+    }
+
+    // ── GET /data/wris/:slug.json ─────────────────────────────────────────────
+    const wrisMatch = url.pathname.match(/^\/data\/wris\/([a_z0-9_-]+)\.json$/i);
+    if (wrisMatch && request.method === "GET") {
+      const key = `wris/${wrisMatch[1]}.json`;
+      const obj = await env.GRBMS_BUCKET.get(key);
+      if (!obj) return json({ error: "WRIS data not found" }, 404);
+      return new Response(obj.body, {
+        headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=3600", ...cors(origin) },
+      });
+    }
+
     return json({ error: "Not found" }, 404);
   },
 };
