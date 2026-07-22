@@ -179,7 +179,7 @@ export default {
     }
 
     // ── GET /data/wris/:slug.json ─────────────────────────────────────────────
-    const wrisMatch = url.pathname.match(/^\/data\/wris\/([a-zA-Z0-9_-]+)\.json$/);
+    const wrisMatch = url.pathname.match(/^\/data\/wris\/(.+)\.json$/);
     if (wrisMatch && request.method === "GET") {
       const key = `wris/${wrisMatch[1]}.json`;
       const obj = await env.GRBMS_BUCKET.get(key);
