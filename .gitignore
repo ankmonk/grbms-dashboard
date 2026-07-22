@@ -1,0 +1,22 @@
+# Don't push sensitive data to GitHub — it goes to Cloudflare R2
+site/data/stations/
+site/data/index.json
+
+# Python / pipeline
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
+._*
+
+# Node (Cloudflare Worker build)
+deploy/cloudflare-worker/node_modules/
+
+# Secrets
+*.pem
+*.key

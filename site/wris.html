@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganga Basin — WRIS Hydro-Meteorological Explorer</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css"/>
+<script src="vendor/leaflet/leaflet.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Ganga Basin — WRIS Explorer</h1>
+  <span class="meta" id="hdr-meta">loading…</span>
+  <span class="spacer"></span>
+  <a class="ghost" href="index.html" style="text-decoration:none;padding:5px 11px;">← Water Quality</a>
+  <button class="ghost" id="theme-btn" type="button">Dark</button>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="aside-head">Selection</div>
+    <div class="selection-panel">
+      <div class="field">
+        <label for="variable-select">Variable</label>
+        <select id="variable-select"></select>
+      </div>
+      <div class="field">
+        <label for="state-select">State</label>
+        <select id="state-select"><option value="">All states</option></select>
+      </div>
+      <div class="field">
+        <label for="station-search">Find station</label>
+        <input type="text" id="station-search" placeholder="name or district…">
+      </div>
+    </div>
+    <div class="aside-head" id="list-head">Stations</div>
+    <div id="station-list"></div>
+  </aside>
+
+  <main>
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <h2 id="ts-title">Time series</h2>
+      <p class="sub" id="ts-sub"></p>
+      <div class="legend" id="ts-legend"></div>
+      <svg class="chart" id="ts-chart" role="img"></svg>
+    </div>
+
+    <div class="card">
+      <h2 id="map-title">Station map</h2>
+      <p class="sub" id="map-sub"></p>
+      <div class="map-wrap"><div id="map"></div></div>
+      <div class="scale">
+        <span id="scale-lo">low</span>
+        <div class="bar" id="scale-bar"></div>
+        <span id="scale-hi">high</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <details class="tbl">
+        <summary>Monthly data table</summary>
+        <div class="tablewrap" id="table"></div>
+      </details>
+    </div>
+  </main>
+</div>
+
+<div id="tip" role="tooltip"></div>
+<script src="wris.js"></script>
+</body>
+</html>
