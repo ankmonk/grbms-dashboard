@@ -5,6 +5,44 @@ const $ = (s) => document.querySelector(s);
 const NS = "http://www.w3.org/2000/svg";
 const el = (tag, a = {}) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
 
+// ── Cloudflare Worker base URL ─────────────────────────────────────────────
+const WORKER_URL = "https://grbms-worker.ankitbara76.workers.dev";
+
+// ── Secure fetch — automatically attaches JWT token ────────────────────────
+async function secureFetch(path) {
+  const token = sessionStorage.getItem("grbms_token");
+  const res = await fetch(`${WORKER_URL}${path}`, {
+    headers: token ? { "Authorization": `Bearer ${token}` } : {},
+  });
+  if (res.status === 401) {
+    // Token expired or invalid → force re-login
+    sessionStorage.removeItem("grbms_token");
+    showLoginScreen();
+    throw new Error("Session expired. Please log in again.");
+  }
+  return res.json();
+}
+
+// ── Show / hide login screen ────────────────────────────────────────────────
+function showLoginScreen() {
+  const ls = document.getElementById("login-screen");
+  const hdr = document.querySelector("header");
+  const wrap = document.querySelector(".wrap");
+  if (ls)   ls.style.display  = "flex";
+  if (hdr)  hdr.style.display = "none";
+  if (wrap) wrap.style.display = "none";
+}
+
+function hideLoginScreen() {
+  const ls = document.getElementById("login-screen");
+  const hdr = document.querySelector("header");
+  const wrap = document.querySelector(".wrap");
+  if (ls)   ls.style.display  = "none";
+  if (hdr)  hdr.style.display = "flex";
+  if (wrap) wrap.style.display = "grid";
+  setTimeout(() => { if (mapObj) mapObj.invalidateSize(); }, 120);
+}
+
 const state = {
   index: null,
   variable: null,   // {name, slug, unit, agg, ...}
@@ -384,8 +422,8 @@ function selectStation(code) {
 
 async function loadVariable(slug) {
   if (!cache.has(slug)) {
-    const r = await fetch(`data/wris/${slug}.json`);
-    cache.set(slug, await r.json());
+    const data = await secureFetch(`/data/wris/${slug}.json`);
+    cache.set(slug, data);
   }
   state.data = cache.get(slug);
   state.variable = state.index.variables.find((v) => v.slug === slug);
@@ -403,7 +441,49 @@ async function loadVariable(slug) {
 }
 
 async function init() {
-  state.index = await (await fetch("data/wris/index.json")).json();
+  // ── AUTH: check existing token or handle login form ─────────────────────
+  const existingToken = sessionStorage.getItem("grbms_token");
+  if (!existingToken) {
+    showLoginScreen();
+    await new Promise((resolve, reject) => {
+      document.getElementById("login-form").onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("login-btn");
+        const errEl = document.getElementById("login-error");
+        const username = document.getElementById("login-user").value;
+        const password = document.getElementById("login-pass").value;
+        btn.disabled = true;
+        btn.textContent = "Signing in…";
+        errEl.textContent = "";
+        try {
+          const res = await fetch(`${WORKER_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            errEl.textContent = d.error || "Invalid username or password.";
+            btn.disabled = false;
+            btn.textContent = "Sign In →";
+            return;
+          }
+          const { token } = await res.json();
+          sessionStorage.setItem("grbms_token", token);
+          hideLoginScreen();
+          resolve();
+        } catch (err) {
+          errEl.textContent = "Cannot reach server. Check your connection.";
+          btn.disabled = false;
+          btn.textContent = "Sign In →";
+        }
+      };
+    });
+  } else {
+    hideLoginScreen();
+  }
+
+  state.index = await secureFetch("/data/wris/index.json");
   const ix = state.index;
   const totalStations = ix.variables.reduce((a, v) => a + v.n_stations, 0);
   const scope = ix.scope === "ganga" ? "Ganga basin" : "All India";
