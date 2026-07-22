@@ -45,11 +45,33 @@
 </div>
 
 <header style="display:none">
-  <h1>Ganga River Basin Monitoring System (GRBMS)</h1>
-  <span class="meta" id="hdr-meta">loading…</span>
+  <div class="brand-badge">
+    <div class="brand-icon-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M2 12 Q7 5 12 12 Q17 19 22 12" stroke="var(--cyan-accent)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M2 17 Q7 10 12 17 Q17 24 22 17" stroke="var(--purple-accent)" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <span class="brand-title">GRBMS</span>
+      <span class="brand-sub">Ganga River Basin Monitoring System</span>
+    </div>
+  </div>
+
+  <nav class="nav-tabs">
+    <a href="index.html" class="nav-tab active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+      Water Quality &amp; CO₂ Evasion
+    </a>
+    <a href="wris.html" class="nav-tab">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M5 14l4-8 5 5 5-8"/></svg>
+      WRIS Hydro-Met Explorer
+    </a>
+  </nav>
+
   <span class="spacer"></span>
-  <a class="ghost" href="wris.html" style="text-decoration:none;padding:5px 11px;">WRIS Explorer →</a>
-  <button class="ghost" id="theme-btn" type="button">Dark</button>
+  <span class="meta" id="hdr-meta"><span class="live-dot"></span> loading…</span>
+  <button class="theme-toggle-btn" id="theme-btn" type="button">🌙 Dark</button>
 </header>
 
 <div class="wrap" style="display:none">

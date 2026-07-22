@@ -194,9 +194,34 @@ function ramp(vals) {
   };
 }
 
+function renderPillsBar() {
+  const bar = $("#wris-pills-bar");
+  if (!bar || !state.index) return;
+  const icons = {
+    ground_water_level: "🌊",
+    rainfall: "🌧️",
+    river_water_discharge: "💧",
+    river_water_level: "📏",
+    suspended_sediment: "🧪",
+    temperature: "🌡️",
+    relative_humidity: "💧",
+    wind_direction: "💨",
+    atmospheric_pressure: "⏱️"
+  };
+  bar.innerHTML = state.index.variables.map(v => {
+    const isActive = state.variable && state.variable.slug === v.slug;
+    const icon = icons[v.slug] || "📊";
+    return `<div class="wris-pill${isActive ? " active" : ""}" onclick="loadVariable('${v.slug}')">
+      <span>${icon}</span>
+      <span>${v.name}</span>
+      <span class="wris-pill-count">${v.n_stations}</span>
+    </div>`;
+  }).join("");
+}
+
 function renderList() {
-  const rows = filtered();
   const list = $("#station-list");
+  const rows = filtered();
   $("#list-head").textContent = `${rows.length} station${rows.length === 1 ? "" : "s"}`;
   const stat = (s) => statOf(s);
   const vals = rows.map((s) => stat(s)?.last).filter((v) => v != null);
@@ -204,18 +229,29 @@ function renderList() {
   list.innerHTML = "";
   for (const s of rows.slice(0, 400)) {
     const st = stat(s);
+    const isSelected = state.station && s.code === state.station.code;
     const d = document.createElement("div");
-    d.className = "station";
-    d.setAttribute("aria-selected", state.station && s.code === state.station.code);
-    d.innerHTML = `<span class="dot" style="background:${color(st?.last)}"></span>
-      <span><span class="nm">${s.name}</span><br><span class="cd">${s.district || ""}${s.state ? " · " + s.state : ""}</span></span>
-      <span class="val">${st ? fmtN(st.last) : "—"}</span>`;
+    d.className = `station-item${isSelected ? " active" : ""}`;
+    d.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:${color(st?.last)}; display:inline-block;"></span>
+        <div>
+          <div class="station-item-name">${s.name}</div>
+          <div style="font-size:11px; color:var(--text-muted);">${s.district || ""}${s.state ? " · " + s.state : ""}</div>
+        </div>
+      </div>
+      <div class="station-item-val">${st ? fmtN(st.last) : "—"}</div>
+    `;
     d.onclick = () => selectStation(s.code);
     list.appendChild(d);
   }
   if (rows.length > 400) {
-    const more = document.createElement("div"); more.className = "aside-head";
-    more.textContent = `+${rows.length - 400} more — narrow with search`; list.appendChild(more);
+    const more = document.createElement("div");
+    more.style.padding = "8px 12px";
+    more.style.fontSize = "11px";
+    more.style.color = "var(--text-muted)";
+    more.textContent = `+${rows.length - 400} more — use search to filter`;
+    list.appendChild(more);
   }
   return { rows, color };
 }
@@ -225,15 +261,19 @@ function renderTiles() {
   const u = state.variable.unit;
   if (!s) { $("#tiles").innerHTML = ""; return; }
   const tiles = [
-    ["Latest", fmtN(s.last), u],
-    [state.variable.agg === "sum" ? "Mean monthly total" : "Mean", fmtN(s.mean), u],
-    ["Min", fmtN(s.min), u],
-    ["Max", fmtN(s.max), u],
-    ["Months", s.months.toLocaleString(), ""],
-    ["Raw readings", s.reads.toLocaleString(), ""],
+    ["Latest Value", fmtN(s.last), u],
+    [state.variable.agg === "sum" ? "Mean Monthly Total" : "Mean Value", fmtN(s.mean), u],
+    ["Minimum", fmtN(s.min), u],
+    ["Maximum", fmtN(s.max), u],
+    ["Recorded Months", s.months.toLocaleString(), ""],
+    ["Total Readings", s.reads.toLocaleString(), ""],
   ];
-  $("#tiles").innerHTML = tiles.map(([k, v, un]) =>
-    `<div class="tile"><div class="k">${k}</div><div class="v">${v}<span class="u">${un}</span></div></div>`).join("");
+  $("#tiles").innerHTML = tiles.map(([k, v, un]) => `
+    <div class="tile">
+      <div class="tile-label">${k}</div>
+      <div class="tile-val">${v} ${un ? '<span style="font-size:12px; color:var(--text-muted);">' + un + '</span>' : ''}</div>
+    </div>
+  `).join("");
 }
 
 function renderChart() {
@@ -241,12 +281,12 @@ function renderChart() {
   const pts = seriesPts(st);
   $("#ts-title").textContent = `${state.variable.name} — ${st.name}`;
   $("#ts-sub").textContent = pts.length
-    ? `${st.district || ""}${st.state ? ", " + st.state : ""} · ${st.agency || ""} · ${pts.length} months · ${fmtMonth(pts[0][0])} to ${fmtMonth(pts[pts.length - 1][0])}`
-    : "no data";
-  const lbl = state.variable.agg === "sum" ? "Monthly total" : "Monthly mean";
+    ? `${st.district || ""}${st.state ? ", " + st.state : ""} · ${st.agency || ""} · ${pts.length} months (${fmtMonth(pts[0][0])} to ${fmtMonth(pts[pts.length - 1][0])})`
+    : "No data available";
+  const lbl = state.variable.agg === "sum" ? "Monthly Total" : "Monthly Mean";
   $("#ts-legend").innerHTML =
-    `<span class="item"><span class="swatch" style="background:var(--series-1)"></span>${lbl} (${state.variable.unit})</span>` +
-    (state.variable.agg === "mean" ? `<span class="item" style="color:var(--text-muted)"><span class="swatch" style="background:var(--series-1);opacity:.2"></span>monthly min–max</span>` : "");
+    `<span class="legend-item"><span class="legend-color" style="background:var(--series-1)"></span>${lbl} (${state.variable.unit})</span>` +
+    (state.variable.agg === "mean" ? `<span class="legend-item" style="color:var(--text-muted)"><span class="legend-color" style="background:var(--series-1);opacity:.3"></span>Monthly Min–Max Range</span>` : "");
   drawChart($("#ts-chart"), st);
 }
 
@@ -264,39 +304,73 @@ function renderTable() {
 function renderMap() {
   const { rows, color } = renderList();
   const pts = rows.filter((s) => s.lat && s.lon);
-  const st = statOf(state.station);
   const vals = rows.map((s) => statOf(s)?.last).filter((v) => v != null);
   const { lo, hi } = ramp(vals);
-  $("#map-sub").textContent = `${pts.length} located station${pts.length === 1 ? "" : "s"}, coloured by latest value`;
+
+  // Google Satellite/Hybrid map layer
+  const tileUrl = "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}";
+  const tileAttrib = 'Map data &copy;2026 Google';
+
+  $("#map-sub").textContent = `${pts.length} stations located in basin, coloured by latest ${state.variable.name}`;
   $("#scale-lo").textContent = fmtN(lo); $("#scale-hi").textContent = fmtN(hi);
   $("#scale-bar").style.background = "linear-gradient(90deg,var(--seq-100),var(--seq-250),var(--seq-400),var(--seq-550),var(--seq-700))";
 
   if (!pts.length) { if (markersLayer) markersLayer.clearLayers(); return; }
+
   if (!mapObj) {
-    mapObj = L.map("map", { center: [26, 84], zoom: 6, minZoom: 3, maxZoom: 12 });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap &copy; CARTO", subdomains: "abcd",
-    }).addTo(mapObj);
+    mapObj = L.map("map", { center: [26, 83], zoom: 6, minZoom: 4, maxZoom: 13 });
+    mapObj.baseLayer = L.tileLayer(tileUrl, { attribution: tileAttrib }).addTo(mapObj);
     markersLayer = L.layerGroup().addTo(mapObj);
+
+    fetch("data/ganga_basin.geojson")
+      .then(res => res.json())
+      .then(geoJsonData => {
+        L.geoJSON(geoJsonData, {
+          style: {
+            color: "#00d0ff",
+            weight: 2,
+            opacity: 0.85,
+            fillColor: "#00d0ff",
+            fillOpacity: 0.05
+          }
+        }).addTo(mapObj);
+      })
+      .catch(() => {});
+  } else if (mapObj.baseLayer) {
+    mapObj.baseLayer.setUrl(tileUrl);
   }
+
   markersLayer.clearLayers();
+
   for (const s of pts) {
     const sel = state.station && s.code === state.station.code;
     const m = L.circleMarker([s.lat, s.lon], {
-      radius: sel ? 8 : 5, fillColor: color(statOf(s)?.last), fillOpacity: 0.9,
-      color: sel ? "#e34948" : "#ffffff", weight: sel ? 3 : 1.5,
+      radius: sel ? 9.5 : 6.5,
+      fillColor: color(statOf(s)?.last),
+      fillOpacity: 0.9,
+      color: sel ? "#e34948" : "#ffffff",
+      weight: sel ? 3.5 : 2,
     });
-    m.bindTooltip(`<strong>${s.name}</strong><br>${s.district || ""} · latest ${fmtN(statOf(s)?.last)} ${state.variable.unit}`,
-      { className: "custom-map-tooltip", direction: "top" });
+    
+    m.bindTooltip(`
+      <div style="font-family:inherit; font-size:12px;">
+        <strong style="display:block; margin-bottom:4px;">${s.name}</strong>
+        <div>${state.variable.name}: <strong>${fmtN(statOf(s)?.last)} ${state.variable.unit}</strong></div>
+        <div style="color:var(--text-muted); font-size:11px;">${s.district || ""}${s.state ? " · " + s.state : ""}</div>
+      </div>
+    `, { direction: "top" });
+
     m.on("click", () => selectStation(s.code));
     markersLayer.addLayer(m);
   }
+
   const lats = pts.map((s) => s.lat), lons = pts.map((s) => s.lon);
   mapObj.invalidateSize();
-  mapObj.fitBounds([[Math.min(...lats), Math.min(...lons)], [Math.max(...lats), Math.max(...lons)]], { padding: [30, 30], maxZoom: 9 });
+  mapObj.fitBounds([[Math.min(...lats), Math.min(...lons)], [Math.max(...lats), Math.max(...lons)]], { padding: [35, 35], maxZoom: 9 });
 }
 
 function renderAll() {
+  renderPillsBar();
   if (state.station) { renderTiles(); renderChart(); renderTable(); }
   renderMap();
 }
