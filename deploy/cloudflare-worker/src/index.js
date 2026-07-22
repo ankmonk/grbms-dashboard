@@ -11,12 +11,13 @@
  *   GET  /data/ganga_basin.geojson → public basin shape (no auth)
  */
 
-// ─── CONFIG (edit these before deploying) ────────────────────────────────────
-// Credentials stored in Worker Secrets (set via: wrangler secret put PASSWORD_ankit)
-// Fallback hardcoded credentials (less secure, but works for single user):
-const CREDENTIALS = {
-  ankit: "REDACTED",
-};
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// Credentials live ONLY in Worker Secrets — never in this (public) source file:
+//   npx wrangler secret put PASSWORD_ankit     # the login password
+//   npx wrangler secret put JWT_SECRET         # a long random signing key
+// No hardcoded fallback: this repo is public, so a password here would be a
+// published credential. If PASSWORD_ankit is unset, login simply fails closed.
+const CREDENTIALS = {};
 
 // Rate limiting
 const RATE_LIMIT_PER_MINUTE = 60;   // max data requests per user per minute
@@ -125,7 +126,7 @@ export default {
         return json({ error: "Invalid username or password" }, 401);
       }
 
-      const secret = env.JWT_SECRET || "SET_VIA_WRANGLER_SECRET";
+      const secret = env.JWT_SECRET;
       const token = await jwtSign({
         sub: username,
         iat: Math.floor(Date.now() / 1000),
@@ -150,7 +151,7 @@ export default {
 
     if (!token) return json({ error: "Missing token. Please log in." }, 401);
 
-    const secret  = env.JWT_SECRET || "SET_VIA_WRANGLER_SECRET";
+    const secret  = env.JWT_SECRET;
     const payload = await jwtVerify(token, secret);
     if (!payload)  return json({ error: "Invalid or expired token. Please log in again." }, 401);
 

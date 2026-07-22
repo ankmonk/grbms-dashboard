@@ -886,31 +886,20 @@ async function init() {
   if (existingToken) {
     hideLoginScreen();
   } else {
-    // Check if query params were passed in URL (e.g. ?username=ankit&password=REDACTED)
-    const params = new URLSearchParams(window.location.search);
-    const uParam = params.get("username");
-    const pParam = params.get("password");
-
-    let authed = false;
-    if (uParam && pParam) {
-      showLoginScreen();
-      authed = await performLogin(uParam, pParam);
-    }
-
-    if (!authed) {
-      showLoginScreen();
-      await new Promise((resolve) => {
-        const form = document.getElementById("login-form");
-        if (!form) return resolve();
-        form.onsubmit = async (e) => {
-          e.preventDefault();
-          const u = document.getElementById("login-user").value;
-          const p = document.getElementById("login-pass").value;
-          const ok = await performLogin(u, p);
-          if (ok) resolve();
-        };
-      });
-    }
+    // Login form only. Credentials are NEVER read from the URL — query-string
+    // passwords leak into browser history, server logs, and referrer headers.
+    showLoginScreen();
+    await new Promise((resolve) => {
+      const form = document.getElementById("login-form");
+      if (!form) return resolve();
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const u = document.getElementById("login-user").value;
+        const p = document.getElementById("login-pass").value;
+        const ok = await performLogin(u, p);
+        if (ok) resolve();
+      };
+    });
   }
 
   // ── DATA: load index via Worker ─────────────────────────────────────────

@@ -1,22 +1,48 @@
-# Don't push sensitive data to GitHub — it goes to Cloudflare R2
-site/data/stations/
-site/data/index.json
+# GRBMS — .gitignore
+# Goal: the UI is public (needed for GitHub Pages); DATA and SECRETS never are.
 
-# Python / pipeline
-__pycache__/
-*.pyc
-*.pyo
-.env
+# ── DATA — never commit (served privately via Cloudflare R2) ──────────────────
+ganga.db
+*.db
 *.db-shm
 *.db-wal
+archive/
+data/
+site/data/
+scratch/
 
-# macOS
-.DS_Store
-._*
-
-# Node (Cloudflare Worker build)
-deploy/cloudflare-worker/node_modules/
-
-# Secrets
+# ── SECRETS — never commit ────────────────────────────────────────────────────
+.env
+*.env
+deploy/.env
 *.pem
 *.key
+*token*
+*secret*
+
+# ── Local-only tooling / scripts / logs (your pipeline stays private) ─────────
+logs/
+*.log
+launchd/
+pipeline/
+scratch/
+__pycache__/
+*.pyc
+*.py
+*.sh
+LAUNCH_GUIDE.md
+
+# ── OS / editors ──────────────────────────────────────────────────────────────
+.DS_Store
+._*
+.vscode/
+.idea/
+
+# NOTE: the deployable UI (app.js, wris.html, index.html, style.css, vendor/)
+# lives at the repo ROOT and IS committed — that is what GitHub Pages serves.
+# The local site/ working copy is intentionally not required for deployment.
+site/app.js
+site/index.html
+site/wris.html
+site/wris.js
+site/style.css
