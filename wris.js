@@ -440,47 +440,73 @@ async function loadVariable(slug) {
   renderAll();
 }
 
-async function init() {
-  // ── AUTH: check existing token or handle login form ─────────────────────
-  const existingToken = sessionStorage.getItem("grbms_token");
-  if (!existingToken) {
-    showLoginScreen();
-    await new Promise((resolve, reject) => {
-      document.getElementById("login-form").onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById("login-btn");
-        const errEl = document.getElementById("login-error");
-        const username = document.getElementById("login-user").value;
-        const password = document.getElementById("login-pass").value;
-        btn.disabled = true;
-        btn.textContent = "Signing in…";
-        errEl.textContent = "";
-        try {
-          const res = await fetch(`${WORKER_URL}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password }),
-          });
-          if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
-            errEl.textContent = d.error || "Invalid username or password.";
-            btn.disabled = false;
-            btn.textContent = "Sign In →";
-            return;
-          }
-          const { token } = await res.json();
-          sessionStorage.setItem("grbms_token", token);
-          hideLoginScreen();
-          resolve();
-        } catch (err) {
-          errEl.textContent = "Cannot reach server. Check your connection.";
-          btn.disabled = false;
-          btn.textContent = "Sign In →";
-        }
-      };
+async function performLogin(username, password) {
+  const btn = document.getElementById("login-btn");
+  const errEl = document.getElementById("login-error");
+  if (btn) { btn.disabled = true; btn.textContent = "Signing in…"; }
+  if (errEl) errEl.textContent = "";
+
+  try {
+    const res = await fetch(`${WORKER_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
     });
-  } else {
+
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      if (errEl) errEl.textContent = d.error || "Invalid username or password.";
+      if (btn) { btn.disabled = false; btn.textContent = "Sign In →"; }
+      return false;
+    }
+
+    const { token } = await res.json();
+    sessionStorage.setItem("grbms_token", token);
     hideLoginScreen();
+
+    // Clean URL bar if query params like ?username=...&password=... were passed
+    if (window.location.search) {
+      history.replaceState(null, "", window.location.pathname);
+    }
+    return true;
+  } catch (err) {
+    if (errEl) errEl.textContent = "Cannot reach server. Check connection.";
+    if (btn) { btn.disabled = false; btn.textContent = "Sign In →"; }
+    return false;
+  }
+}
+
+async function init() {
+  // ── AUTH: check existing token, URL params, or form submit ──────────────
+  const existingToken = sessionStorage.getItem("grbms_token");
+  if (existingToken) {
+    hideLoginScreen();
+  } else {
+    // Check if query params were passed in URL (e.g. ?username=ankit&password=REDACTED)
+    const params = new URLSearchParams(window.location.search);
+    const uParam = params.get("username");
+    const pParam = params.get("password");
+
+    let authed = false;
+    if (uParam && pParam) {
+      showLoginScreen();
+      authed = await performLogin(uParam, pParam);
+    }
+
+    if (!authed) {
+      showLoginScreen();
+      await new Promise((resolve) => {
+        const form = document.getElementById("login-form");
+        if (!form) return resolve();
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const u = document.getElementById("login-user").value;
+          const p = document.getElementById("login-pass").value;
+          const ok = await performLogin(u, p);
+          if (ok) resolve();
+        };
+      });
+    }
   }
 
   state.index = await secureFetch("/data/wris/index.json");
