@@ -533,9 +533,14 @@ function getFilteredStations() {
 
 function updateStationSelectOptions() {
   const filtered = getFilteredStations();
-  $("#station-select").innerHTML = filtered
-    .map((s) => `<option value="${s.station_id}"${s.station_id === state.stationId ? " selected" : ""}>${s.station_name}</option>`)
+  const select = $("#station-select");
+  if (!select) return;
+  select.innerHTML = filtered
+    .map((s) => `<option value="${s.station_id}"${String(s.station_id) === String(state.stationId) ? " selected" : ""}>${s.station_name}</option>`)
     .join("");
+  if (state.stationId) {
+    select.value = String(state.stationId);
+  }
 }
 
 function renderStationMetaCard() {
@@ -813,21 +818,21 @@ async function ensureImputed() {
 }
 
 async function selectStation(id) {
-  state.stationId = id;
+  state.stationId = Number(id);
   state.station = await secureFetch(`/data/stations/${id}.json`);
   state.imputed = null;
   if (state.showImputed) await ensureImputed();
 
-  const idx = state.index.stations.find((s) => s.station_id === id);
+  const idx = state.index.stations.find((s) => String(s.station_id) === String(id));
   if (idx) {
     const filtered = getFilteredStations();
-    const inCurrentFilter = filtered.some(s => s.station_id === id);
+    const inCurrentFilter = filtered.some(s => String(s.station_id) === String(id));
     if (!inCurrentFilter) {
       state.selectedState = idx.state || "";
-      $("#state-select").value = state.selectedState;
+      if ($("#state-select")) $("#state-select").value = state.selectedState;
       updateStationSelectOptions();
     }
-    $("#station-select").value = id;
+    if ($("#station-select")) $("#station-select").value = String(id);
   }
   
   renderAll();
@@ -946,7 +951,7 @@ async function init() {
     updateStationSelectOptions();
     const filtered = getFilteredStations();
     if (filtered.length > 0) {
-      const currentStillValid = filtered.some(s => s.station_id === state.stationId);
+      const currentStillValid = filtered.some(s => String(s.station_id) === String(state.stationId));
       if (!currentStillValid) {
         selectStation(filtered[0].station_id);
       } else {
@@ -965,7 +970,7 @@ async function init() {
     updateStationSelectOptions();
     const filtered = getFilteredStations();
     if (filtered.length > 0) {
-      const currentStillValid = filtered.some(s => s.station_id === state.stationId);
+      const currentStillValid = filtered.some(s => String(s.station_id) === String(state.stationId));
       if (!currentStillValid) {
         selectStation(filtered[0].station_id);
       } else {
@@ -977,7 +982,9 @@ async function init() {
   };
 
   $("#station-select").onchange = (e) => {
-    selectStation(Number(e.target.value));
+    if (e.target.value) {
+      selectStation(e.target.value);
+    }
   };
 
   $("#ranges").querySelectorAll("button").forEach((b) => {
