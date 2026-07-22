@@ -5,9 +5,7 @@ const $ = (s) => document.querySelector(s);
 const SERIES = (n) => `var(--series-${((n) % 8) + 1})`;
 
 // ── Cloudflare Worker base URL ─────────────────────────────────────────────
-// Set this to your deployed Worker URL before pushing to GitHub.
-// Example: "https://grbms-worker.YOUR_SUBDOMAIN.workers.dev"
-const WORKER_URL = "__WORKER_URL__";
+const WORKER_URL = "https://grbms-worker.ankitbara76.workers.dev";
 
 // ── Secure fetch — automatically attaches JWT token ────────────────────────
 async function secureFetch(path) {
