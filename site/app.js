@@ -533,9 +533,14 @@ function getFilteredStations() {
 
 function updateStationSelectOptions() {
   const filtered = getFilteredStations();
-  $("#station-select").innerHTML = filtered
-    .map((s) => `<option value="${s.station_id}"${s.station_id === state.stationId ? " selected" : ""}>${s.station_name}</option>`)
+  const select = $("#station-select");
+  if (!select) return;
+  select.innerHTML = filtered
+    .map((s) => `<option value="${s.station_id}"${String(s.station_id) === String(state.stationId) ? " selected" : ""}>${s.station_name}</option>`)
     .join("");
+  if (state.stationId) {
+    select.value = String(state.stationId);
+  }
 }
 
 function renderStationMetaCard() {
@@ -709,7 +714,7 @@ function renderMap() {
     
     markersLayer = L.layerGroup().addTo(mapObj);
     
-    fetch("data/ganga_basin.geojson")
+    fetch(`${WORKER_URL}/data/ganga_basin.geojson`)
       .then(res => res.json())
       .then(geoJsonData => {
         geoJsonLayer = L.geoJSON(geoJsonData, {
@@ -813,21 +818,21 @@ async function ensureImputed() {
 }
 
 async function selectStation(id) {
-  state.stationId = id;
+  state.stationId = Number(id);
   state.station = await secureFetch(`/data/stations/${id}.json`);
   state.imputed = null;
   if (state.showImputed) await ensureImputed();
 
-  const idx = state.index.stations.find((s) => s.station_id === id);
+  const idx = state.index.stations.find((s) => String(s.station_id) === String(id));
   if (idx) {
     const filtered = getFilteredStations();
-    const inCurrentFilter = filtered.some(s => s.station_id === id);
+    const inCurrentFilter = filtered.some(s => String(s.station_id) === String(id));
     if (!inCurrentFilter) {
       state.selectedState = idx.state || "";
-      $("#state-select").value = state.selectedState;
+      if ($("#state-select")) $("#state-select").value = state.selectedState;
       updateStationSelectOptions();
     }
-    $("#station-select").value = id;
+    if ($("#station-select")) $("#station-select").value = String(id);
   }
   
   renderAll();
@@ -839,48 +844,73 @@ function renderAll() {
   renderMap();
 }
 
-async function init() {
-  // ── AUTH: check existing token or handle login form ─────────────────────
-  const existingToken = sessionStorage.getItem("grbms_token");
-  if (!existingToken) {
-    showLoginScreen();
-    // Wait for the user to submit the login form
-    await new Promise((resolve, reject) => {
-      document.getElementById("login-form").onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById("login-btn");
-        const errEl = document.getElementById("login-error");
-        const username = document.getElementById("login-user").value;
-        const password = document.getElementById("login-pass").value;
-        btn.disabled = true;
-        btn.textContent = "Signing in…";
-        errEl.textContent = "";
-        try {
-          const res = await fetch(`${WORKER_URL}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password }),
-          });
-          if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
-            errEl.textContent = d.error || "Invalid username or password.";
-            btn.disabled = false;
-            btn.textContent = "Sign In →";
-            return;
-          }
-          const { token } = await res.json();
-          sessionStorage.setItem("grbms_token", token);
-          hideLoginScreen();
-          resolve();
-        } catch (err) {
-          errEl.textContent = "Cannot reach server. Check your connection.";
-          btn.disabled = false;
-          btn.textContent = "Sign In →";
-        }
-      };
+async function performLogin(username, password) {
+  const btn = document.getElementById("login-btn");
+  const errEl = document.getElementById("login-error");
+  if (btn) { btn.disabled = true; btn.textContent = "Signing in…"; }
+  if (errEl) errEl.textContent = "";
+
+  try {
+    const res = await fetch(`${WORKER_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
     });
-  } else {
+
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      if (errEl) errEl.textContent = d.error || "Invalid username or password.";
+      if (btn) { btn.disabled = false; btn.textContent = "Sign In →"; }
+      return false;
+    }
+
+    const { token } = await res.json();
+    sessionStorage.setItem("grbms_token", token);
     hideLoginScreen();
+
+    // Clean URL bar if query params like ?username=...&password=... were passed
+    if (window.location.search) {
+      history.replaceState(null, "", window.location.pathname);
+    }
+    return true;
+  } catch (err) {
+    if (errEl) errEl.textContent = "Cannot reach server. Check connection.";
+    if (btn) { btn.disabled = false; btn.textContent = "Sign In →"; }
+    return false;
+  }
+}
+
+async function init() {
+  // ── AUTH: check existing token, URL params, or form submit ──────────────
+  const existingToken = sessionStorage.getItem("grbms_token");
+  if (existingToken) {
+    hideLoginScreen();
+  } else {
+    // Check if query params were passed in URL (e.g. ?username=ankit&password=REDACTED)
+    const params = new URLSearchParams(window.location.search);
+    const uParam = params.get("username");
+    const pParam = params.get("password");
+
+    let authed = false;
+    if (uParam && pParam) {
+      showLoginScreen();
+      authed = await performLogin(uParam, pParam);
+    }
+
+    if (!authed) {
+      showLoginScreen();
+      await new Promise((resolve) => {
+        const form = document.getElementById("login-form");
+        if (!form) return resolve();
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const u = document.getElementById("login-user").value;
+          const p = document.getElementById("login-pass").value;
+          const ok = await performLogin(u, p);
+          if (ok) resolve();
+        };
+      });
+    }
   }
 
   // ── DATA: load index via Worker ─────────────────────────────────────────
@@ -921,7 +951,7 @@ async function init() {
     updateStationSelectOptions();
     const filtered = getFilteredStations();
     if (filtered.length > 0) {
-      const currentStillValid = filtered.some(s => s.station_id === state.stationId);
+      const currentStillValid = filtered.some(s => String(s.station_id) === String(state.stationId));
       if (!currentStillValid) {
         selectStation(filtered[0].station_id);
       } else {
@@ -940,7 +970,7 @@ async function init() {
     updateStationSelectOptions();
     const filtered = getFilteredStations();
     if (filtered.length > 0) {
-      const currentStillValid = filtered.some(s => s.station_id === state.stationId);
+      const currentStillValid = filtered.some(s => String(s.station_id) === String(state.stationId));
       if (!currentStillValid) {
         selectStation(filtered[0].station_id);
       } else {
@@ -952,7 +982,9 @@ async function init() {
   };
 
   $("#station-select").onchange = (e) => {
-    selectStation(Number(e.target.value));
+    if (e.target.value) {
+      selectStation(e.target.value);
+    }
   };
 
   $("#ranges").querySelectorAll("button").forEach((b) => {

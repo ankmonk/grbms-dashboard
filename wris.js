@@ -360,7 +360,7 @@ function renderMap() {
     mapObj.baseLayer = L.tileLayer(tileUrl, { attribution: tileAttrib }).addTo(mapObj);
     markersLayer = L.layerGroup().addTo(mapObj);
 
-    fetch("data/ganga_basin.geojson")
+    fetch(`${WORKER_URL}/data/ganga_basin.geojson`)
       .then(res => res.json())
       .then(geoJsonData => {
         L.geoJSON(geoJsonData, {

@@ -135,6 +135,15 @@ export default {
       return json({ token });
     }
 
+    // ── GET /data/ganga_basin.geojson (Public shapefile - bypass auth) ────────
+    if (url.pathname === "/data/ganga_basin.geojson" && request.method === "GET") {
+      const obj = await env.GRBMS_BUCKET.get("ganga_basin.geojson");
+      if (!obj) return json({ error: "Shapefile not found" }, 404);
+      return new Response(obj.body, {
+        headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=86400", ...cors(origin) },
+      });
+    }
+
     // ── All other routes: require valid JWT ───────────────────────────────────
     const authHeader = request.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
