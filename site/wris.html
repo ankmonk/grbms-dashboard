@@ -10,29 +10,82 @@
 </head>
 <body>
 
-<header>
-  <h1>Ganga Basin — WRIS Explorer</h1>
-  <span class="meta" id="hdr-meta">loading…</span>
+<!-- ── LOGIN SCREEN ─────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div id="login-card">
+    <div id="login-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" stroke="#00d0ff" stroke-width="2" fill="none" opacity="0.3"/>
+        <path d="M8 28 Q16 14 24 22 Q32 30 40 16" stroke="#00d0ff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="24" cy="22" r="3" fill="#00d0ff"/>
+      </svg>
+    </div>
+    <h2 id="login-title">GRBMS — WRIS</h2>
+    <p id="login-subtitle">Hydro-Meteorological Explorer</p>
+    <p id="login-author">Ankit Bara · IIT BHU · Carbon Flux Research</p>
+    <form id="login-form" autocomplete="on">
+      <div class="login-field">
+        <label for="login-user">Username</label>
+        <input id="login-user" name="username" type="text"
+               autocomplete="username" placeholder="Enter username" required />
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Password</label>
+        <input id="login-pass" name="password" type="password"
+               autocomplete="current-password" placeholder="Enter password" required />
+      </div>
+      <p id="login-error"></p>
+      <button type="submit" id="login-btn">Sign In →</button>
+    </form>
+    <p id="login-footer">Secured by Cloudflare · Data is private &amp; protected</p>
+  </div>
+</div>
+
+<header style="display:none">
+  <div class="brand-badge">
+    <div class="brand-icon-box">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M2 12 Q7 5 12 12 Q17 19 22 12" stroke="var(--cyan-accent)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M2 17 Q7 10 12 17 Q17 24 22 17" stroke="var(--purple-accent)" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <span class="brand-title">GRBMS</span>
+      <span class="brand-sub">Ganga River Basin Monitoring System</span>
+    </div>
+  </div>
+
+  <nav class="nav-tabs">
+    <a href="index.html" class="nav-tab">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+      Water Quality &amp; CO₂ Evasion
+    </a>
+    <a href="wris.html" class="nav-tab active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M5 14l4-8 5 5 5-8"/></svg>
+      WRIS Hydro-Met Explorer
+    </a>
+  </nav>
+
   <span class="spacer"></span>
-  <a class="ghost" href="index.html" style="text-decoration:none;padding:5px 11px;">← Water Quality</a>
-  <button class="ghost" id="theme-btn" type="button">Dark</button>
+  <span class="meta" id="hdr-meta"><span class="live-dot"></span> loading…</span>
+  <button class="theme-toggle-btn" id="theme-btn" type="button">🌙 Dark</button>
 </header>
 
-<div class="wrap">
+<div class="wrap" style="display:none">
   <aside>
-    <div class="aside-head">Selection</div>
+    <div class="aside-head">Location &amp; Filters</div>
     <div class="selection-panel">
       <div class="field">
-        <label for="variable-select">Variable</label>
+        <label for="variable-select">Hydro-Met Variable</label>
         <select id="variable-select"></select>
       </div>
       <div class="field">
-        <label for="state-select">State</label>
+        <label for="state-select">State Filter</label>
         <select id="state-select"><option value="">All states</option></select>
       </div>
       <div class="field">
-        <label for="station-search">Find station</label>
-        <input type="text" id="station-search" placeholder="name or district…">
+        <label for="station-search">Find Station</label>
+        <input type="text" id="station-search" placeholder="Search station or district…">
       </div>
     </div>
     <div class="aside-head" id="list-head">Stations</div>
@@ -40,17 +93,23 @@
   </aside>
 
   <main>
+    <!-- Variable Quick Pills -->
+    <div class="wris-pills-bar" id="wris-pills-bar"></div>
+
+    <!-- Summary Metrics -->
     <div class="tiles" id="tiles"></div>
 
+    <!-- SVG Time Series Chart -->
     <div class="card">
-      <h2 id="ts-title">Time series</h2>
+      <h2 id="ts-title">Hydro-Meteorological Time Series</h2>
       <p class="sub" id="ts-sub"></p>
       <div class="legend" id="ts-legend"></div>
       <svg class="chart" id="ts-chart" role="img"></svg>
     </div>
 
+    <!-- Google Satellite Basin Map -->
     <div class="card">
-      <h2 id="map-title">Station map</h2>
+      <h2 id="map-title">Ganga Basin Station Network</h2>
       <p class="sub" id="map-sub"></p>
       <div class="map-wrap"><div id="map"></div></div>
       <div class="scale">
@@ -60,9 +119,10 @@
       </div>
     </div>
 
+    <!-- Monthly Data Table -->
     <div class="card">
       <details class="tbl">
-        <summary>Monthly data table</summary>
+        <summary>Monthly Data Table — View Records</summary>
         <div class="tablewrap" id="table"></div>
       </details>
     </div>
