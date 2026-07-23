@@ -304,6 +304,24 @@ select:focus, input[type="text"]:focus {
   box-shadow: 0 0 0 3px var(--cyan-glow);
 }
 
+/* Custom, theme-consistent dropdown — replaces the native OS arrow & control */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9a9a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  text-overflow: ellipsis;
+}
+select:hover { border-color: var(--border-strong); background-color: var(--surface-1); }
+select option {
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+select option:checked { font-weight: 600; }
+
 /* Station Meta Card */
 .station-meta-card {
   background: var(--surface-2);
@@ -559,6 +577,19 @@ main {
   display: block;
   overflow: visible;
 }
+
+/* SVG chart elements — RESTORED. Without these, <path> defaults to a solid
+   black fill (the "black wedges" bug) and <line>/<text> lose their colours. */
+.chart .line       { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.chart .raw-line   { fill: none; }
+.chart .thresh     { fill: none; stroke-dasharray: 5 4; stroke-width: 1.5; }
+/* (No blanket `.chart path{fill:none}` — that would erase the WRIS min/max
+    band, which carries its fill as an inline attribute CSS would override.) */
+.chart .grid-line  { stroke: var(--grid); stroke-width: 1; }
+.chart .axis-line  { stroke: var(--border-strong); stroke-width: 1; }
+.chart text        { fill: var(--text-muted); font-size: 10.5px; font-family: inherit; }
+.chart text.axis-title { fill: var(--text-secondary); font-size: 11px; font-weight: 600; }
+.chart .dot        { fill: var(--series-1); }
 
 .legend {
   display: flex;
