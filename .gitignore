@@ -21,6 +21,7 @@ deploy/.env
 *secret*
 
 # ── Local-only tooling / scripts / logs (your pipeline stays private) ─────────
+deploy/
 logs/
 *.log
 launchd/

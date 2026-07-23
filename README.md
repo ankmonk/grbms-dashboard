@@ -1,81 +1,36 @@
-# GRBMS — Ganga River Basin Monitoring System
+# Ganga River Basin Monitoring System (GRBMS)
 
-**Ankit Bara · IIT BHU · Carbon Flux Research**
+**Scientific Research Dashboard for Water Quality, Hydrology, and CO₂ Evasion Dynamics**
 
-A secure, private research dashboard for monitoring water quality, water surface elevation, and CO₂ flux across the Ganga River Basin.
+*Developed by Ankit Bara · IIT BHU (Department of Civil Engineering / Hydrological Sciences)*
 
-## Architecture
+---
 
-```
-GitHub Pages (public UI)
-    ↓  authenticated API calls
-Cloudflare Worker (JWT gateway, rate limiter)
-    ↓  private R2 reads only
-Cloudflare R2 (private data bucket — no public URL)
-```
+## 🌊 Executive Overview
 
-**Cost: ₹0/month** (within Cloudflare free tier)
+The **Ganga River Basin Monitoring System (GRBMS)** is an interactive, high-resolution scientific data dashboard designed to analyze hydrological parameters, water quality indices, and carbon dioxide ($\text{CO}_2$) evasion fluxes across monitoring stations along the Ganga River Basin.
 
-## Deployment (One-Time Setup)
+The platform provides multi-dimensional data visualization, interactive spatial mapping, curve fitting algorithms (EMA, Lowess, Savitzky-Golay), and temporal trend analyses to support hydrological and biogeochemical carbon research.
 
-### Prerequisites
-```bash
-# Install Node.js first, then:
-npm install -g wrangler
-wrangler login       # opens browser — log in with your Cloudflare account
-```
+---
 
-### Step 1 — Create Cloudflare R2 Bucket
-1. Go to cloudflare.com → R2 → Create bucket
-2. Name: `grbms-data`
-3. Leave public access OFF
+## 📊 Modules & Features
 
-### Step 2 — Deploy the Worker (API Gateway)
-```bash
-bash deploy/deploy_worker.sh
-# → Enter a JWT secret when prompted (run: openssl rand -hex 32 to generate one)
-# → Enter your dashboard password for username "ankit"
-# → Copy the Worker URL printed at the end
-```
+### 1. Water Quality & CO₂ Evasion Dashboard (`index.html`)
+- **Key Parameters**: Dissolved Oxygen ($\text{DO}$), $\text{pH}$, Biochemical Oxygen Demand ($\text{BOD}$), Water Surface Elevation ($\text{WSE}$), and Derived Carbon Fluxes ($\text{pCO}_2, \text{FCO}_2$).
+- **Station Network**: High-precision interactive map rendering monitoring stations across major river stretches (Upper, Middle, Lower Ganga, and major tributaries).
+- **Time-Series Analysis**: Multi-year temporal visualizations with customizable smoothing algorithms and red-dot imputed data indicators.
 
-### Step 3 — Set Worker URL in app.js
-Edit `site/app.js` line 10:
-```javascript
-const WORKER_URL = "https://grbms-worker.YOUR_SUBDOMAIN.workers.dev";
-```
+### 2. WRIS Hydro-Meteorological Explorer (`wris.html`)
+- **Multi-Variable Explorer**: Comprehensive visualization of India-WRIS hydro-meteorological datasets including Groundwater Levels, Rainfall, River Stage, and Discharge.
+- **Spatial Mapping**: Google Satellite Hybrid spatial coverage with station magnitude color-coding and district-level metadata.
 
-### Step 4 — Upload Data to R2
-```bash
-# First run the pipeline to build the JSON files:
-python3 pipeline/build_site.py
+---
 
-# Then upload to private R2 bucket:
-bash deploy/upload_data_to_r2.sh
-```
+## 🔬 Scientific Citation & Contact
 
-### Step 5 — Push to GitHub Pages
-1. Create a GitHub repo named `grbms-dashboard` at github.com
-2. Run:
-```bash
-bash deploy/setup_github.sh YOUR_GITHUB_USERNAME
-```
-3. Go to repo Settings → Pages → Source: `main` branch, `/site` folder
-4. Your dashboard will be live at: `https://YOUR_USERNAME.github.io/grbms-dashboard/`
+For academic inquiries, collaboration, or data access requests regarding the Ganga Basin Carbon Evasion Research Project:
 
-## Updating Data
-
-Whenever you run `build_site.py` with new data:
-```bash
-python3 pipeline/build_site.py
-bash deploy/upload_data_to_r2.sh
-```
-
-No need to re-push to GitHub — the UI is static.
-
-## Security
-
-- Data files have **no public URL** — all access goes through the Worker
-- Worker validates JWT tokens on every request
-- Rate limited to 60 requests/minute per user
-- Token expires after 24 hours (forces re-login)
-- Secrets (JWT key, password) stored in Cloudflare — never in code
+- **Researcher**: Ankit Bara
+- **Institution**: Indian Institute of Technology (BHU) Varanasi
+- **Department**: Civil Engineering (Hydrology & Biogeochemistry Group)
